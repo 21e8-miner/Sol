@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: solana-arbitrage-bot
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: SOLANA_RPC_URL
+        value: https://api.mainnet-beta.solana.com
+      - key: MIN_SPREAD_THRESHOLD
+        value: 0.5
+      - key: TRADE_AMOUNT_SOL
+        value: 0.1
+      - key: SCAN_INTERVAL_SECONDS
+        value: 5
+    healthCheckPath: /
