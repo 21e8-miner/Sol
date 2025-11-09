@@ -1,0 +1,51 @@
+# Core dependencies for Qwen LLM self-hosting
+# Python >= 3.8 required
+
+# PyTorch (install appropriate version for your system)
+# For CUDA 11.8:
+torch>=2.0.0
+# For CPU only, use: torch>=2.0.0+cpu
+
+# Transformers for model loading
+transformers>=4.35.0
+accelerate>=0.20.0
+sentencepiece>=0.1.99
+tiktoken>=0.5.0
+
+# Model serving frameworks (choose based on your setup)
+# vLLM - High-performance inference (requires GPU)
+vllm>=0.2.0; platform_system != "Darwin"
+
+# LMDeploy - Alternative serving framework
+# lmdeploy>=0.2.0
+
+# FastAPI for custom API server
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.0.0
+
+# HTTP client for integration
+requests>=2.31.0
+httpx>=0.25.0
+
+# Additional utilities
+numpy>=1.24.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Optional: Jupyter support
+jupyter>=1.0.0
+notebook>=7.0.0
+ipywidgets>=8.0.0
+
+# Optional: Monitoring and logging
+tqdm>=4.66.0
+loguru>=0.7.0
+
+# Optional: Model optimization
+optimum>=1.14.0
+bitsandbytes>=0.41.0  # For quantization (Linux/CUDA only)
+
+# Development tools
+pytest>=7.4.0
+black>=23.0.0

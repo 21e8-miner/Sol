@@ -1,0 +1,58 @@
+# Qwen Self-Hosting Configuration
+
+# Model Configuration
+model:
+  # Model name or local path
+  # Options: Qwen/Qwen2-0.5B-Instruct, Qwen/Qwen2-1.5B-Instruct, Qwen/Qwen2-7B-Instruct, etc.
+  name: "Qwen/Qwen2-1.5B-Instruct"
+
+  # Cache directory for model weights
+  cache_dir: "./models"
+
+  # Device to use: auto, cuda, cpu
+  device: "auto"
+
+  # Quantization (requires GPU and bitsandbytes)
+  quantization:
+    enabled: false
+    bits: 8  # 4 or 8
+
+# Server Configuration
+server:
+  # Backend: fastapi or vllm
+  backend: "fastapi"
+
+  # Host and port
+  host: "127.0.0.1"
+  port: 8000
+
+  # Security
+  api_key: null  # Set to enable authentication
+
+  # CORS settings
+  cors:
+    enabled: true
+    origins: ["*"]
+
+# Generation Defaults
+generation:
+  max_tokens: 512
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+
+# Performance
+performance:
+  # Batch size for inference
+  batch_size: 1
+
+  # Number of workers (for vLLM)
+  workers: 1
+
+  # GPU memory fraction (0.0 to 1.0)
+  gpu_memory_fraction: 0.9
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: null  # Set to log to file
