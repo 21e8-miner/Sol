@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QWEN TRADING // AUTONOMOUS SYSTEM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+
+        .terminal {
+            background: rgba(0, 50, 0, 0.2);
+            border: 2px solid #0f0;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: 600px;
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #0f0;
+            animation: glow 2s infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 10px #0f0; }
+            50% { text-shadow: 0 0 20px #0f0, 0 0 30px #0f0; }
+        }
+
+        .status-bar {
+            padding: 10px;
+            background: rgba(0, 100, 0, 0.2);
+            border: 1px solid #0a0;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f00;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #0f0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #0f0;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #0a0;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .log {
+            font-size: 13px;
+            line-height: 1.8;
+            margin-bottom: 10px;
+            padding: 5px;
+            border-left: 3px solid #0f0;
+        }
+
+        .log.success { color: #0f0; border-color: #0f0; }
+        .log.error { color: #f00; border-color: #f00; }
+        .log.warning { color: #ff0; border-color: #ff0; }
+        .log.info { color: #0af; border-color: #0af; }
+
+        .btn {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .btn:hover {
+            background: #0a0;
+            box-shadow: 0 0 20px #0f0;
+        }
+
+        .btn:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        #chart {
+            width: 100%;
+            height: 200px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            margin: 20px 0;
+        }
+
+        #logs {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #0a0;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal">
+        <h1>⚡ QWEN TRADING // AUTONOMOUS SYSTEM ⚡</h1>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+            <div>
+                <span>Backend: ws://localhost:8765</span>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-label">SIGNALS DETECTED</div>
+                <div class="stat-value" id="found">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">POTENTIAL PROFIT</div>
+                <div class="stat-value" id="potentialProfit">$0.00</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">TRADING CAPITAL</div>
+                <div class="stat-value" id="capital">$0.00</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">TOTAL PNL</div>
+                <div class="stat-value" id="pnl">$0.00</div>
+            </div>
+        </div>
+
+        <button class="btn" id="startBtn" onclick="startAutonomous()">START AUTONOMOUS MODE</button>
+        <button class="btn" id="analyzeBtn" onclick="runAnalysis()" disabled>RUN SINGLE ANALYSIS</button>
+
+        <canvas id="chart" width="1200" height="200"></canvas>
+
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let priceHistory = [];
+
+        // Stats
+        let stats = {
+            opportunities_found: 0,
+            potential_profit: 0.0,
+            trading_capital: 10000.0,
+            total_pnl: 0.0,
+        };
+
+        function log(level, message) {
+            const logs = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.className = `log ${level}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.insertBefore(entry, logs.firstChild);
+            if (logs.children.length > 50) logs.removeChild(logs.lastChild);
+        }
+
+        function updateStatus(connected) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            const startBtn = document.getElementById('startBtn');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+
+            if (connected) {
+                dot.classList.add('connected');
+                text.textContent = 'Connected to Backend';
+                startBtn.disabled = false;
+                analyzeBtn.disabled = false;
+            } else {
+                dot.classList.remove('connected');
+                text.textContent = 'Disconnected';
+                startBtn.disabled = true;
+                analyzeBtn.disabled = true;
+            }
+        }
+
+        function updateStats(newStats) {
+            stats = { ...stats, ...newStats };
+
+            document.getElementById('found').textContent = stats.opportunities_found || 0;
+            document.getElementById('potentialProfit').textContent = `$${(stats.potential_profit || 0).toFixed(2)}`;
+            document.getElementById('capital').textContent = `$${(stats.trading_capital || 10000).toFixed(2)}`;
+            document.getElementById('pnl').textContent = `$${(stats.total_pnl || 0).toFixed(2)}`;
+        }
+
+        function drawChart(price) {
+            priceHistory.push(price);
+            if (priceHistory.length > 100) priceHistory.shift();
+
+            const canvas = document.getElementById('chart');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Clear
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, width, height);
+
+            if (priceHistory.length < 2) return;
+
+            // Scale
+            const min = Math.min(...priceHistory) * 0.999;
+            const max = Math.max(...priceHistory) * 1.001;
+            const range = max - min;
+
+            function getY(p) {
+                return height - ((p - min) / range) * height;
+            }
+
+            // Draw grid
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = 0; i < width; i += 50) {
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, height);
+            }
+            for (let i = 0; i < height; i += 40) {
+                ctx.moveTo(0, i);
+                ctx.lineTo(width, i);
+            }
+            ctx.stroke();
+
+            // Draw price line
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            priceHistory.forEach((p, i) => {
+                const x = (i / (priceHistory.length - 1)) * width;
+                const y = getY(p);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Price label
+            const lastPrice = priceHistory[priceHistory.length - 1];
+            ctx.fillStyle = '#0ff';
+            ctx.font = '12px monospace';
+            ctx.fillText(lastPrice.toFixed(2), width - 70, getY(lastPrice));
+        }
+
+        function connectWebSocket() {
+            log('info', 'Connecting to backend...');
+
+            ws = new WebSocket('ws://localhost:8765');
+
+            ws.onopen = () => {
+                log('success', '✅ Connected to trading backend');
+                updateStatus(true);
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleMessage(data);
+            };
+
+            ws.onerror = (error) => {
+                log('error', 'WebSocket error');
+                console.error(error);
+            };
+
+            ws.onclose = () => {
+                log('warning', 'Connection closed. Reconnecting in 3s...');
+                updateStatus(false);
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        function handleMessage(data) {
+            const type = data.type;
+
+            if (type === 'init') {
+                log('info', 'Received initial configuration');
+                updateStats(data.stats);
+            }
+
+            else if (type === 'log') {
+                log(data.level, data.message);
+            }
+
+            else if (type === 'market_data') {
+                drawChart(data.price);
+            }
+
+            else if (type === 'decision') {
+                log('info', `Decision received: ${data.decision.action}`);
+                updateStats(data.stats);
+
+                if (data.decision.action !== 'hold') {
+                    log('success', `🚀 SIGNAL: ${data.decision.action.toUpperCase()}`);
+                }
+            }
+
+            else if (type === 'stats') {
+                updateStats(data.stats);
+            }
+        }
+
+        function sendMessage(message) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(message));
+            } else {
+                log('error', 'Not connected to backend');
+            }
+        }
+
+        function startAutonomous() {
+            log('info', 'Starting autonomous mode...');
+            sendMessage({ type: 'start_autonomous' });
+        }
+
+        function runAnalysis() {
+            log('info', 'Running single analysis...');
+            sendMessage({ type: 'run_analysis' });
+        }
+
+        // Auto-connect on load
+        window.addEventListener('load', () => {
+            log('success', '⚡ QWEN TRADING SYSTEM ONLINE');
+            log('info', 'Initializing connection to backend...');
+            setTimeout(connectWebSocket, 1000);
+        });
+
+        // Heartbeat
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                sendMessage({ type: 'ping' });
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

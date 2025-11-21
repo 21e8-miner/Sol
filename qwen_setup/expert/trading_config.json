@@ -1,0 +1,9 @@
+{
+  "paper_trading": true,
+  "symbol": "BTCUSDT",
+  "interval": "1h",
+  "server_url": "http://localhost:8000",
+  "num_ensemble_models": 5,
+  "base_risk_pct": 0.0075,
+  "equity": 10000.0
+}
