@@ -80,7 +80,7 @@ class TradingWebSocketServer:
                 return_exceptions=True
             )
 
-    async def handle_client(self, websocket: WebSocketServerProtocol, path: str):
+    async def handle_client(self, websocket: WebSocketServerProtocol, path: str = "/"):
         """Handle individual client connection"""
         await self.register(websocket)
 
